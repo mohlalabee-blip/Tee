@@ -9,7 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 <style>
-/* --- COMPLETE CSS (every style from before) --- */
+/* ---------- COMPLETE CSS ---------- */
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --bg:#0B0F1A;--card:#111827;--border:#1F2937;
@@ -132,8 +132,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .send-btn:hover{opacity:.85;}
 .attach-btn{width:42px;height:42px;border-radius:12px;flex-shrink:0;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 
-/* Settings, Profile, Status modals – keep full styles from before */
-/* I'll include only the critical ones; you should paste the complete CSS for these if missing */
+/* Settings */
 .settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:450;}
 .settings-overlay.show{display:block;}
 .settings-panel{position:fixed;top:0;right:-320px;width:300px;height:100%;background:var(--card);border-left:1px solid var(--border);z-index:451;transition:right .3s ease;display:flex;flex-direction:column;overflow-y:auto;}
@@ -198,29 +197,720 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 </style>
 </head>
 <body>
-<!-- Keep the same HTML as previous full code with back button, settings panel, modals, etc. -->
-<!-- I'll only show the key structural parts -->
 
-<div id="auth-screen"><!-- ... sign in ... --></div>
-<div id="app-screen">
-  <!-- topbar, settings panel HTML, status/profile modals, chat panel, etc. -->
-  <!-- Ensure the chat header has the back button -->
-  <div class="chat-header">
-    <button class="back-btn" id="back-btn">‹</button>
-    <div class="chat-header-av" id="ch-av">?</div>
-    <div class="chat-header-info" id="ch-header-info">
-      <div class="chat-header-name" id="ch-name">...</div>
-      <div class="chat-header-status" id="ch-status">Offline</div>
-    </div>
-    <button class="chat-header-vcall" id="ch-vcall">📹</button>
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo"><div class="icon">🔒</div><h1>Private Room</h1><p>Invite-only. No traces.</p></div>
+    <div class="auth-err" id="auth-err"></div>
+    <div class="ig"><label>Username</label><input type="text" id="u-inp" placeholder="Choose a username"/></div>
+    <div class="ig"><label>Password</label><input type="password" id="p-inp" placeholder="Password"/></div>
+    <button class="btn-primary" id="auth-btn">Sign In</button>
+    <div class="auth-toggle"><span id="auth-tog">Don't have an account? Sign up</span></div>
   </div>
-  <!-- ... -->
 </div>
 
+<!-- APP -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-left"><span>🔒</span></div>
+    <div class="user-pill" id="status-pill"><div class="avatar" id="my-av">?</div><span id="my-uname">...</span></div>
+    <div class="topbar-right">
+      <button class="icon-btn" id="settings-btn">⚙️</button>
+      <button class="icon-btn" id="share-btn">🔗</button>
+      <button class="icon-btn" id="so-btn">🚪</button>
+    </div>
+  </div>
+
+  <!-- Status Modal -->
+  <div id="status-modal"><div class="status-box">
+    <h3>Set Status</h3>
+    <textarea id="status-input" maxlength="80" placeholder="What's on your mind?"></textarea>
+    <div class="btn-row"><button class="btn-cancel" id="status-cancel">Cancel</button><button class="btn-save" id="status-save">Save</button></div>
+  </div></div>
+
+  <!-- Profile Modal -->
+  <div id="profile-modal"><div class="profile-box">
+    <div class="p-avatar"><span id="p-avatar-text">?</span><div class="p-online-dot" id="p-online-dot"></div></div>
+    <div class="p-name" id="p-name">Username</div>
+    <div class="p-status-text" id="p-status-text"></div>
+    <div class="p-last-seen" id="p-last-seen"></div>
+    <div class="p-actions">
+      <button class="btn-close" id="profile-close">Close</button>
+      <button class="btn-message" id="profile-message">Message</button>
+      <button class="btn-call" id="profile-call">Call</button>
+    </div>
+  </div></div>
+
+  <!-- Image Preview Modal -->
+  <div id="image-preview-modal"><img id="image-preview-img" src=""/></div>
+
+  <!-- Settings Panel -->
+  <div class="settings-overlay" id="settings-overlay"></div>
+  <div class="settings-panel" id="settings-panel">
+    <div class="settings-header"><h2>Settings</h2><button class="settings-close" id="settings-close">✕</button></div>
+    <div class="settings-list">
+      <div class="settings-section-title">Account</div>
+      <div class="settings-item" id="set-edit-name"><div class="s-icon">✏️</div> Edit Name</div>
+      <div class="settings-item" id="set-change-password"><div class="s-icon">🔑</div> Change Password</div>
+      <div class="settings-item" id="set-status"><div class="s-icon">💬</div> Custom Status</div>
+      <div class="settings-section-title">Chat</div>
+      <div class="settings-item" id="set-clear-chats"><div class="s-icon">🗑️</div> Clear All Messages</div>
+      <div class="settings-item" id="set-auto-delete"><div class="s-icon">⏰</div> Auto‑delete (24h)<div class="settings-toggle" id="auto-delete-toggle"></div></div>
+      <div class="settings-section-title">Danger</div>
+      <div class="settings-item danger" id="set-delete-account"><div class="s-icon">⚠️</div> Delete Account</div>
+      <div class="settings-section-title">About</div>
+      <div class="settings-item" style="cursor:default;"><div class="s-icon">ℹ️</div><div style="font-size:12px;color:var(--muted);">Private Room v1.0<br>End‑to‑end encrypted<br>Messages auto‑delete after 24h</div></div>
+    </div>
+  </div>
+
+  <!-- Settings Sub‑modals -->
+  <div class="settings-modal" id="modal-edit-name"><div class="settings-modal-box"><h3>Edit Display Name</h3><input type="text" id="input-edit-name" placeholder="New name" maxlength="20"/><div class="btn-row"><button class="btn-cancel" onclick="closeSettingsModal('modal-edit-name')">Cancel</button><button class="btn-save" onclick="saveDisplayName()">Save</button></div></div></div>
+  <div class="settings-modal" id="modal-change-password"><div class="settings-modal-box"><h3>Change Password</h3><input type="password" id="input-new-password" placeholder="New password (min 6 chars)"/><div class="btn-row"><button class="btn-cancel" onclick="closeSettingsModal('modal-change-password')">Cancel</button><button class="btn-save" onclick="changePassword()">Change</button></div></div></div>
+
+  <div class="body-area">
+    <div class="conv-list-panel">
+      <div class="conv-list-hdr">💬 Messages</div>
+      <div class="conv-list" id="conv-list"></div>
+    </div>
+    <div class="chat-panel" id="chat-panel">
+      <div class="no-chat-selected" id="no-chat-msg"><span class="emo">💬</span><p>Select someone to start chatting</p></div>
+      <div id="active-chat" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+        <div class="chat-header">
+          <button class="back-btn" id="back-btn">‹</button>
+          <div class="chat-header-av" id="ch-av">?</div>
+          <div class="chat-header-info" id="ch-header-info">
+            <div class="chat-header-name" id="ch-name">...</div>
+            <div class="chat-header-status" id="ch-status">Offline</div>
+          </div>
+          <button class="chat-header-vcall" id="ch-vcall">📹</button>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="typing-bubble" id="typing-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="reply-preview" id="reply-preview"><span class="rp-label">↩️</span><span class="rp-text" id="rp-text"></span><span class="rp-cancel" id="rp-cancel">✕</span></div>
+        <div class="upload-progress" id="upload-progress">Uploading...</div>
+        <div class="input-bar">
+          <button class="attach-btn" id="attach-btn">📎</button>
+          <textarea class="msg-input" id="msg-input" placeholder="Type a message..." rows="1"></textarea>
+          <button class="send-btn" id="send-btn">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept="image/*"/>
+<div id="react-picker-overlay"></div>
+<div id="react-picker"><span data-emoji="👍">👍</span><span data-emoji="❤️">❤️</span><span data-emoji="😂">😂</span><span data-emoji="😮">😮</span><span data-emoji="😢">😢</span><span data-emoji="🔥">🔥</span></div>
+
+<!-- Video & Incoming Call UI -->
+<div id="video-overlay"><div class="call-status" id="call-status">Calling...</div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
+    <div style="position:relative;border-radius:16px;overflow:hidden;background:#1a1a2e;border:2px solid var(--border);"><video id="remote-video" autoplay playsinline style="width:100%;height:220px;object-fit:cover;background:#000;"></video><div style="position:absolute;bottom:10px;left:12px;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:20px;font-size:12px;" id="remote-label">Remote</div></div>
+    <div style="position:relative;border-radius:16px;overflow:hidden;background:#1a1a2e;border:2px solid var(--border);"><video id="local-video" autoplay playsinline muted style="width:100%;height:220px;object-fit:cover;background:#000;"></video><div style="position:absolute;bottom:10px;left:12px;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:20px;font-size:12px;">You</div></div>
+  </div>
+  <div style="display:flex;gap:16px;">
+    <button id="mute-btn" style="width:52px;height:52px;border-radius:50%;border:none;font-size:20px;cursor:pointer;background:var(--border);color:var(--text);">🎤</button>
+    <button id="end-btn" style="width:52px;height:52px;border-radius:50%;border:none;font-size:20px;cursor:pointer;background:var(--red);color:#fff;">📵</button>
+    <button id="cam-btn" style="width:52px;height:52px;border-radius:50%;border:none;font-size:20px;cursor:pointer;background:var(--border);color:var(--text);">📷</button>
+  </div>
+</div>
+<div id="incoming-call"><h3 id="caller-name">Someone</h3><p>Incoming video call...</p><div style="display:flex;gap:8px;"><button id="accept-btn" style="flex:1;padding:8px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:var(--green);color:#fff;">✅ Accept</button><button id="decline-btn" style="flex:1;padding:8px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:var(--red);color:#fff;">❌ Decline</button></div></div>
+
 <script>
-// Full JavaScript from the last fully‑working version – no changes needed.
-// Just ensure that 'myUid' is correctly compared.
-// If you still see all messages on one side, add a console.log('me:', me) inside appendMessage to debug.
+// ---------- COMPLETE JAVASCRIPT ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyDUHVeaHIMRS8GxkFNEjVSXfUeKr_mQnp0",
+  authDomain: "just-you-n-i.firebaseapp.com",
+  databaseURL: "https://just-you-n-i-default-rtdb.firebaseio.com",
+  projectId: "just-you-n-i",
+  storageBucket: "just-you-n-i.firebasestorage.app",
+  messagingSenderId: "340669970156",
+  appId: "1:340669970156:web:a717d9a97f52eb629e17c9",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.database();
+const storage = firebase.storage();
+
+const ROOM = "myroom";
+let myUid, myName;
+let activePeer = null, activePeerName = "";
+let msgRef = null;
+let allUsers = {};
+let replyId = null, replyText = null;
+let localStream = null, peerConn = null;
+let isMuted = false, isCamOff = false;
+let unreadCounts = {};
+let typingUsers = {};
+
+// ── AUTH ──
+const authErr = document.getElementById('auth-err');
+const authBtn = document.getElementById('auth-btn');
+let isSignUp = false;
+
+document.getElementById('auth-tog').onclick = () => {
+  isSignUp = !isSignUp;
+  authBtn.textContent = isSignUp ? 'Create Account' : 'Sign In';
+  document.getElementById('auth-tog').textContent = isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up";
+};
+authBtn.onclick = async () => {
+  const u = document.getElementById('u-inp').value.trim();
+  const p = document.getElementById('p-inp').value.trim();
+  if (!u || !p) return showErr('Fill all fields');
+  authBtn.disabled = true;
+  try {
+    if (isSignUp) {
+      const c = await auth.createUserWithEmailAndPassword(u + '@privateroom.app', p);
+      await c.user.updateProfile({ displayName: u });
+    } else {
+      await auth.signInWithEmailAndPassword(u + '@privateroom.app', p);
+    }
+  } catch (e) {
+    showErr(e.message.replace('Firebase: ', '').replace(/\(auth\/.*\)/, ''));
+    authBtn.disabled = false;
+  }
+};
+function showErr(m) { authErr.textContent = m; authErr.style.display = 'block'; }
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    myUid = user.uid;
+    myName = user.displayName || user.email.split('@')[0];
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'flex';
+    document.getElementById('my-uname').textContent = myName;
+    document.getElementById('my-av').textContent = myName[0].toUpperCase();
+    initApp();
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+    authBtn.disabled = false;
+  }
+});
+
+// ── INIT ──
+function initApp() {
+  const presRef = db.ref(`rooms/${ROOM}/presence/${myUid}`);
+  presRef.set({ username: myName, online: true, lastSeen: Date.now() });
+  presRef.onDisconnect().update({ online: false, lastSeen: Date.now() });
+
+  db.ref(`rooms/${ROOM}/presence`).on('value', snap => {
+    allUsers = snap.val() || {};
+    renderUsers();
+    if (activePeer) updateHeader();
+  });
+
+  db.ref(`rooms/${ROOM}/calls`).on('child_added', handleIncomingCall);
+  watchAllTyping();
+
+  document.getElementById('status-pill').onclick = () => document.getElementById('status-modal').classList.add('show');
+  document.getElementById('status-cancel').onclick = () => document.getElementById('status-modal').classList.remove('show');
+  document.getElementById('status-save').onclick = () => {
+    const s = document.getElementById('status-input').value.trim();
+    db.ref(`rooms/${ROOM}/presence/${myUid}/status`).set(s);
+    document.getElementById('status-modal').classList.remove('show');
+  };
+
+  document.getElementById('profile-close').onclick = () => document.getElementById('profile-modal').classList.remove('show');
+  document.getElementById('profile-message').onclick = () => {
+    const uid = document.getElementById('profile-modal').dataset.uid;
+    const uname = document.getElementById('profile-modal').dataset.uname;
+    if (uid && uname) { document.getElementById('profile-modal').classList.remove('show'); openChat(uid, uname); }
+  };
+  document.getElementById('profile-call').onclick = () => {
+    const uid = document.getElementById('profile-modal').dataset.uid;
+    const uname = document.getElementById('profile-modal').dataset.uname;
+    if (uid && uname) { document.getElementById('profile-modal').classList.remove('show'); startCall(uid, uname); }
+  };
+
+  document.getElementById('settings-btn').onclick = toggleSettings;
+  document.getElementById('settings-overlay').onclick = toggleSettings;
+  document.getElementById('settings-close').onclick = toggleSettings;
+  document.getElementById('set-edit-name').onclick = () => { document.getElementById('input-edit-name').value = myName; openSettingsModal('modal-edit-name'); };
+  document.getElementById('set-change-password').onclick = () => { document.getElementById('input-new-password').value = ''; openSettingsModal('modal-change-password'); };
+  document.getElementById('set-status').onclick = () => { toggleSettings(); document.getElementById('status-modal').classList.add('show'); };
+  document.getElementById('set-clear-chats').onclick = () => { if (confirm('Delete all your messages?')) clearAllChats(); };
+  document.getElementById('set-delete-account').onclick = () => { if (confirm('Permanently delete your account?')) deleteAccount(); };
+
+  const autoDeleteToggle = document.getElementById('auto-delete-toggle');
+  db.ref(`rooms/${ROOM}/settings/${myUid}/autoDelete`).once('value').then(snap => {
+    if (snap.val() !== false) autoDeleteToggle.classList.add('active');
+  });
+  autoDeleteToggle.onclick = (e) => {
+    e.stopPropagation();
+    const active = autoDeleteToggle.classList.contains('active');
+    db.ref(`rooms/${ROOM}/settings/${myUid}/autoDelete`).set(!active);
+    autoDeleteToggle.classList.toggle('active');
+  };
+
+  document.getElementById('share-btn').onclick = () => navigator.clipboard?.writeText(location.href).then(() => alert('Link copied!'));
+  document.getElementById('so-btn').onclick = async () => {
+    await db.ref(`rooms/${ROOM}/presence/${myUid}`).update({ online: false });
+    auth.signOut();
+  };
+
+  document.getElementById('send-btn').onclick = sendMsg;
+  document.getElementById('msg-input').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } };
+  document.getElementById('msg-input').oninput = function () {
+    this.style.height = '42px';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    showTyping();
+  };
+  document.getElementById('attach-btn').onclick = () => document.getElementById('file-input').click();
+  document.getElementById('file-input').onchange = uploadImage;
+  document.getElementById('rp-cancel').onclick = clearReply;
+
+  document.getElementById('react-picker-overlay').onclick = hideReactPicker;
+  document.querySelectorAll('#react-picker span').forEach(s => {
+    s.onclick = function (e) {
+      e.stopPropagation();
+      const mid = document.getElementById('react-picker').dataset.msgId;
+      if (!mid || !activePeer) return;
+      const ref = db.ref(`rooms/${ROOM}/dms/${getKey(activePeer)}/messages/${mid}`);
+      ref.once('value').then(snap => {
+        const cur = snap.val();
+        ref.child('reaction').set(cur && cur.reaction === this.dataset.emoji ? null : this.dataset.emoji);
+      });
+      hideReactPicker();
+    };
+  });
+
+  document.getElementById('image-preview-modal').onclick = function () { this.classList.remove('show'); };
+
+  document.getElementById('end-btn').onclick = endCall;
+  document.getElementById('mute-btn').onclick = () => { if(!localStream)return; isMuted=!isMuted; localStream.getAudioTracks().forEach(t=>t.enabled=!isMuted); document.getElementById('mute-btn').textContent=isMuted?'🔇':'🎤'; };
+  document.getElementById('cam-btn').onclick = () => { if(!localStream)return; isCamOff=!isCamOff; localStream.getVideoTracks().forEach(t=>t.enabled=!isCamOff); document.getElementById('cam-btn').textContent=isCamOff?'📵':'📷'; };
+
+  document.getElementById('back-btn').onclick = closeChat;
+  document.getElementById('ch-header-info').onclick = () => { if (activePeer) showProfile(activePeer, activePeerName); };
+  document.getElementById('ch-av').onclick = () => { if (activePeer) showProfile(activePeer, activePeerName); };
+
+  setInterval(cleanupOld, 5 * 60 * 1000);
+}
+
+function getKey(uid) { return [myUid, uid].sort().join('_'); }
+
+// ── USERS LIST ──
+function renderUsers() {
+  const list = document.getElementById('conv-list');
+  const others = Object.entries(allUsers).filter(([uid]) => uid !== myUid);
+  if (!others.length) {
+    list.innerHTML = '<div class="no-contacts"><span class="emo">👥</span><p>No one else is here yet</p></div>';
+    return;
+  }
+  others.sort((a, b) => {
+    const au = unreadCounts[a[0]] || 0, bu = unreadCounts[b[0]] || 0;
+    if (au && !bu) return -1; if (bu && !au) return 1;
+    if (a[1].online && !b[1].online) return -1; if (b[1].online && !a[1].online) return 1;
+    return 0;
+  });
+
+  list.innerHTML = others.map(([uid, u]) => {
+    const unread = unreadCounts[uid] || 0;
+    const activeCls = activePeer === uid ? ' active' : '';
+    const unreadCls = unread && activePeer !== uid ? ' has-unread' : '';
+    let preview = '';
+    if (typingUsers[uid]) preview = '<div class="conv-preview" style="color:var(--green);font-style:italic;">typing...</div>';
+    else if (u.status) preview = `<div class="conv-status">${esc(u.status)}</div>`;
+    else if (u.online) preview = '<div class="conv-preview">Online</div>';
+    else preview = `<div class="conv-last-seen">last seen ${timeAgo(u.lastSeen)}</div>`;
+    const badge = (unread && activePeer !== uid) ? `<div class="conv-unread" style="margin-left:auto;">${unread > 99 ? '99+' : unread}</div>` : '';
+    return `
+      <div class="conv-item${activeCls}${unreadCls}" data-uid="${uid}" data-uname="${esc(u.username)}">
+        <div class="conv-av">${u.username[0].toUpperCase()}${u.online ? '<div class="conv-online-dot"></div>' : ''}</div>
+        <div class="conv-info"><div class="conv-name">${esc(u.username)}</div>${preview}</div>
+        ${badge}
+      </div>`;
+  }).join('');
+
+  document.querySelectorAll('.conv-item').forEach(item => {
+    const uid = item.dataset.uid;
+    const uname = item.dataset.uname;
+    let pressTimer;
+    item.addEventListener('click', (e) => {
+      if (pressTimer === 'long') return;
+      openChat(uid, uname);
+    });
+    const start = () => pressTimer = setTimeout(() => { pressTimer = 'long'; showProfile(uid, uname); }, 600);
+    const cancel = () => { if (pressTimer !== 'long') clearTimeout(pressTimer); };
+    item.addEventListener('mousedown', start);
+    item.addEventListener('mouseup', cancel);
+    item.addEventListener('mouseleave', cancel);
+    item.addEventListener('touchstart', start);
+    item.addEventListener('touchend', cancel);
+    item.addEventListener('touchmove', cancel);
+  });
+
+  others.forEach(([uid]) => {
+    const key = getKey(uid);
+    db.ref(`rooms/${ROOM}/dms/${key}/messages`).off('value');
+    db.ref(`rooms/${ROOM}/dms/${key}/messages`).on('value', snap => {
+      let count = 0;
+      snap.forEach(child => { const m = child.val(); if (!m.deleted && m.senderUid !== myUid && m.readStatus !== 'read') count++; });
+      unreadCounts[uid] = count;
+      if (activePeer !== uid) renderUsers();
+    });
+  });
+}
+
+function timeAgo(ts) { if (!ts) return ''; const m = Math.floor((Date.now() - ts) / 60000); if (m < 1) return 'just now'; if (m < 60) return m + 'm ago'; const h = Math.floor(m / 60); if (h < 24) return h + 'h ago'; return Math.floor(h / 24) + 'd ago'; }
+
+// ── PROFILE ──
+function showProfile(uid, uname) {
+  const u = allUsers[uid] || {};
+  document.getElementById('p-avatar-text').textContent = (uname || '?')[0].toUpperCase();
+  document.getElementById('p-name').textContent = uname || 'Unknown';
+  document.getElementById('p-status-text').textContent = u.status || '';
+  document.getElementById('p-online-dot').style.display = u.online ? 'block' : 'none';
+  document.getElementById('p-last-seen').textContent = u.online ? 'Online now' : (u.lastSeen ? 'Last seen ' + timeAgo(u.lastSeen) : 'Offline');
+  document.getElementById('profile-modal').dataset.uid = uid;
+  document.getElementById('profile-modal').dataset.uname = uname;
+  document.getElementById('profile-modal').classList.add('show');
+}
+
+// ── TYPING ──
+function watchAllTyping() {
+  db.ref(`rooms/${ROOM}/presence`).on('value', snap => {
+    const users = snap.val() || {};
+    Object.keys(users).forEach(uid => {
+      if (uid === myUid) return;
+      const key = getKey(uid);
+      db.ref(`rooms/${ROOM}/dms/${key}/typing`).off('value');
+      db.ref(`rooms/${ROOM}/dms/${key}/typing`).on('value', tsnap => {
+        const t = tsnap.val() || {};
+        const isTyping = Object.entries(t).some(([u, v]) => u !== myUid && Date.now() - v.ts < 4000);
+        if (isTyping) typingUsers[uid] = true; else delete typingUsers[uid];
+        renderUsers();
+        if (activePeer === uid) {
+          document.getElementById('typing-bubble').style.display = isTyping ? 'flex' : 'none';
+          if (isTyping) document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+          updateHeader();
+        }
+      });
+    });
+  });
+}
+
+let typingTimer;
+function showTyping() {
+  if (!activePeer) return;
+  db.ref(`rooms/${ROOM}/dms/${getKey(activePeer)}/typing/${myUid}`).set({ ts: Date.now() });
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => db.ref(`rooms/${ROOM}/dms/${getKey(activePeer)}/typing/${myUid}`).remove(), 3000);
+}
+
+// ── CHAT ──
+function openChat(uid, uname) {
+  if (msgRef) { msgRef.off('child_added'); msgRef = null; }
+  if (activePeer && activePeer !== uid) markRead(activePeer);
+  activePeer = uid; activePeerName = uname;
+  clearReply();
+  document.getElementById('typing-bubble').style.display = 'none';
+  document.querySelectorAll('.conv-item').forEach(el => el.classList.toggle('active', el.dataset.uid === uid));
+  document.getElementById('chat-panel').classList.add('open');
+  document.getElementById('no-chat-msg').style.display = 'none';
+  document.getElementById('active-chat').style.display = 'flex';
+  updateHeader();
+  loadMessages(uid);
+  setTimeout(() => { markRead(uid); unreadCounts[uid] = 0; renderUsers(); }, 300);
+}
+
+function closeChat() {
+  document.getElementById('chat-panel').classList.remove('open');
+  activePeer = null;
+  if (msgRef) { msgRef.off('child_added'); msgRef = null; }
+}
+
+function updateHeader() {
+  const u = allUsers[activePeer] || {};
+  document.getElementById('ch-av').textContent = (u.username || '?')[0].toUpperCase();
+  document.getElementById('ch-name').textContent = u.username || 'Unknown';
+  const st = document.getElementById('ch-status');
+  if (typingUsers[activePeer]) { st.textContent = 'typing...'; st.className = 'chat-header-status on'; }
+  else if (u.online) { st.textContent = u.status || 'Online'; st.className = 'chat-header-status on'; }
+  else { st.textContent = u.lastSeen ? 'last seen ' + timeAgo(u.lastSeen) : 'Offline'; st.className = 'chat-header-status'; }
+  document.getElementById('ch-vcall').onclick = () => startCall(activePeer, u.username);
+}
+
+function loadMessages(peerUid) {
+  const container = document.getElementById('messages');
+  container.innerHTML = '';
+  const key = getKey(peerUid);
+  msgRef = db.ref(`rooms/${ROOM}/dms/${key}/messages`);
+  msgRef.limitToLast(100).on('child_added', snap => {
+    const msg = snap.val();
+    const msgId = snap.key;
+    if (!msg.deleted && msg.senderUid !== myUid) db.ref(`rooms/${ROOM}/dms/${key}/messages/${msgId}`).update({ readStatus: 'read', readTimestamp: Date.now() });
+    db.ref(`rooms/${ROOM}/dms/${key}/messages/${msgId}`).on('child_changed', () => updateMessageUI(msgId));
+    appendMessage(msgId, msg);
+  });
+}
+
+function appendMessage(msgId, msg) {
+  const container = document.getElementById('messages');
+  const me = msg.senderUid === myUid;
+  const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const row = document.createElement('div');
+  row.className = 'msg-row ' + (me ? 'mine' : 'theirs');
+  row.dataset.msgId = msgId;
+
+  if (msg.deleted) {
+    row.innerHTML = `<div class="swipe-wrapper"><div class="bubble"><span style="font-style:italic;opacity:.6;">⏰ Expired</span><div class="btime">${time}</div></div></div>`;
+  } else {
+    let content = '';
+    if (msg.imageUrl) content += `<img src="${esc(msg.imageUrl)}" class="msg-image" onclick="previewImg(this)"/>`;
+    if (msg.text) {
+      if (msg.replyTo && msg.replyTo.text) content += `<div class="reply-ref">↩ ${esc(msg.replyTo.text.substring(0, 50))}</div>`;
+      content += esc(msg.text);
+    }
+    let status = '';
+    if (me) {
+      let cls = 'sent', icon = '✓';
+      if (msg.readStatus === 'read') { cls = 'read'; icon = '✓✓'; }
+      else if (msg.readStatus === 'delivered') { cls = 'delivered'; icon = '✓✓'; }
+      status = `<span class="msg-status ${cls}">${icon}</span>`;
+    }
+    row.innerHTML = `<div class="swipe-wrapper"><div class="swipe-bg">↩️</div><div class="bubble">${content}<div class="btime">${time}${status}</div></div></div>`;
+    if (msg.reaction) {
+      const badge = document.createElement('div');
+      badge.className = 'reaction-badge';
+      badge.textContent = msg.reaction;
+      row.querySelector('.bubble').appendChild(badge);
+    }
+
+    const bubble = row.querySelector('.bubble');
+    const wrapper = row.querySelector('.swipe-wrapper');
+    const swipeBg = wrapper.querySelector('.swipe-bg');
+
+    // Long press
+    let lpTimer;
+    bubble.addEventListener('touchstart', () => { lpTimer = setTimeout(() => { if (!msg.deleted) showReactPicker(bubble, msgId); if (navigator.vibrate) navigator.vibrate(20); }, 500); });
+    bubble.addEventListener('touchend', () => clearTimeout(lpTimer));
+    bubble.addEventListener('touchmove', () => clearTimeout(lpTimer));
+    bubble.addEventListener('mousedown', () => { lpTimer = setTimeout(() => { if (!msg.deleted) showReactPicker(bubble, msgId); }, 500); });
+    bubble.addEventListener('mouseup', () => clearTimeout(lpTimer));
+    bubble.addEventListener('mouseleave', () => clearTimeout(lpTimer));
+    bubble.addEventListener('click', (e) => { if (e.target.tagName === 'IMG') return; if (e.pointerType !== 'touch') setReply(msgId, msg); });
+
+    // Swipe right
+    let startX, startY, currentX = 0;
+    wrapper.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) return;
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY; currentX = 0;
+      bubble.style.transition = 'none';
+      swipeBg.style.opacity = '0';
+    }, { passive: true });
+    wrapper.addEventListener('touchmove', e => {
+      const dx = e.touches[0].clientX - startX;
+      const dy = Math.abs(e.touches[0].clientY - startY);
+      if (dx > 5 && dx > dy * 1.5) {
+        e.preventDefault();
+        currentX = Math.min(dx, 100);
+        bubble.style.transform = `translateX(${currentX}px)`;
+        swipeBg.style.opacity = Math.min(currentX / 70, 1);
+      }
+    }, { passive: false });
+    wrapper.addEventListener('touchend', () => {
+      bubble.style.transition = 'transform 0.2s ease-out';
+      if (currentX >= 70) {
+        if (!msg.deleted) setReply(msgId, msg);
+        if (navigator.vibrate) navigator.vibrate(15);
+      }
+      bubble.style.transform = 'translateX(0)';
+      swipeBg.style.opacity = '0';
+    });
+  }
+  container.appendChild(row);
+  container.scrollTop = container.scrollHeight;
+}
+
+function updateMessageUI(msgId) {
+  const row = document.querySelector(`.msg-row[data-msg-id="${msgId}"]`);
+  if (!row || !activePeer) return;
+  const key = getKey(activePeer);
+  db.ref(`rooms/${ROOM}/dms/${key}/messages/${msgId}`).once('value').then(snap => {
+    const msg = snap.val(); if (!msg) return;
+    row.remove();
+    appendMessage(msgId, msg);
+  });
+}
+
+function sendMsg() {
+  if (!activePeer) return;
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const key = getKey(activePeer);
+  const data = { senderUid: myUid, text, timestamp: Date.now(), readStatus: 'sent' };
+  if (replyId) data.replyTo = { msgId: replyId, text: replyText };
+  db.ref(`rooms/${ROOM}/dms/${key}/messages`).push(data).then(() => {
+    input.value = ''; input.style.height = '42px';
+    clearReply();
+    db.ref(`rooms/${ROOM}/dms/${key}/typing/${myUid}`).remove();
+  }).catch(err => alert('Send failed: ' + err.message));
+}
+
+function setReply(msgId, msg) { replyId = msgId; replyText = msg.text || '📷 Image'; document.getElementById('rp-text').textContent = replyText.substring(0, 70); document.getElementById('reply-preview').style.display = 'flex'; document.getElementById('msg-input').focus(); }
+function clearReply() { replyId = null; replyText = null; document.getElementById('reply-preview').style.display = 'none'; }
+
+function showReactPicker(bubble, msgId) {
+  const picker = document.getElementById('react-picker');
+  const overlay = document.getElementById('react-picker-overlay');
+  const rect = bubble.getBoundingClientRect();
+  picker.style.top = (rect.top - 60) + 'px';
+  picker.style.left = (rect.left + rect.width / 2) + 'px';
+  picker.style.transform = 'translateX(-50%)';
+  picker.dataset.msgId = msgId;
+  picker.classList.add('show');
+  overlay.style.display = 'block';
+  clearTimeout(picker._t);
+  picker._t = setTimeout(hideReactPicker, 3000);
+}
+function hideReactPicker() { document.getElementById('react-picker').classList.remove('show'); document.getElementById('react-picker-overlay').style.display = 'none'; }
+
+function markRead(peerUid) {
+  const key = getKey(peerUid);
+  db.ref(`rooms/${ROOM}/dms/${key}/messages`).orderByChild('senderUid').equalTo(peerUid).once('value').then(snap => {
+    const updates = {};
+    snap.forEach(child => { if (!child.val().deleted && child.val().readStatus !== 'read') updates[child.key + '/readStatus'] = 'read'; });
+    if (Object.keys(updates).length) db.ref(`rooms/${ROOM}/dms/${key}/messages`).update(updates);
+  });
+}
+
+function uploadImage(e) {
+  const file = e.target.files[0];
+  if (!file || !activePeer) return;
+  if (!file.type.startsWith('image/')) return alert('Images only');
+  if (file.size > 10 * 1024 * 1024) return alert('Max 10MB');
+  document.getElementById('upload-progress').style.display = 'block';
+  const ts = Date.now();
+  const ref = storage.ref(`rooms/${ROOM}/images/${getKey(activePeer)}/${ts}_${file.name}`);
+  const task = ref.put(file);
+  task.on('state_changed', snap => document.getElementById('upload-progress').textContent = 'Uploading... ' + Math.round(snap.bytesTransferred / snap.totalBytes * 100) + '%',
+    err => { alert('Upload failed'); document.getElementById('upload-progress').style.display = 'none'; },
+    async () => {
+      const url = await task.snapshot.ref.getDownloadURL();
+      await db.ref(`rooms/${ROOM}/dms/${getKey(activePeer)}/messages`).push({ senderUid: myUid, imageUrl: url, text: '', timestamp: ts, readStatus: 'sent' });
+      document.getElementById('upload-progress').style.display = 'none';
+    });
+  e.target.value = '';
+}
+function previewImg(img) { document.getElementById('image-preview-img').src = img.src; document.getElementById('image-preview-modal').classList.add('show'); }
+
+// ── AUTO DELETE ──
+function cleanupOld() {
+  if (!myUid) return;
+  db.ref(`rooms/${ROOM}/settings/${myUid}/autoDelete`).once('value').then(snap => {
+    if (snap.val() === false) return;
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    Object.keys(allUsers).forEach(uid => {
+      if (uid === myUid) return;
+      const key = getKey(uid);
+      db.ref(`rooms/${ROOM}/dms/${key}/messages`).orderByChild('timestamp').endAt(cutoff).once('value').then(snap => {
+        const updates = {};
+        snap.forEach(child => {
+          const m = child.val(); if (m.deleted) return;
+          if (m.imageUrl) try { storage.refFromURL(m.imageUrl).delete().catch(()=>{}); } catch(e) {}
+          updates[child.key] = { deleted: true, text: 'This message has expired', imageUrl: null, reaction: null, replyTo: null };
+        });
+        if (Object.keys(updates).length) db.ref(`rooms/${ROOM}/dms/${key}/messages`).update(updates);
+      });
+    });
+  });
+}
+
+// ── SETTINGS ──
+function toggleSettings() {
+  const panel = document.getElementById('settings-panel');
+  const overlay = document.getElementById('settings-overlay');
+  panel.classList.toggle('open');
+  overlay.classList.toggle('show');
+}
+function openSettingsModal(id) { document.getElementById(id).classList.add('show'); }
+function closeSettingsModal(id) { document.getElementById(id).classList.remove('show'); }
+async function saveDisplayName() {
+  const newName = document.getElementById('input-edit-name').value.trim();
+  if (!newName) return alert('Name cannot be empty');
+  try {
+    await auth.currentUser.updateProfile({ displayName: newName });
+    await db.ref(`rooms/${ROOM}/presence/${myUid}`).update({ username: newName });
+    myName = newName;
+    document.getElementById('my-uname').textContent = newName;
+    document.getElementById('my-av').textContent = newName[0].toUpperCase();
+    closeSettingsModal('modal-edit-name');
+  } catch (e) { alert('Error: ' + e.message); }
+}
+async function changePassword() {
+  const newPass = document.getElementById('input-new-password').value;
+  if (!newPass || newPass.length < 6) return alert('Min 6 characters');
+  try {
+    await auth.currentUser.updatePassword(newPass);
+    closeSettingsModal('modal-change-password');
+    alert('Password changed!');
+  } catch (e) { alert('Error: ' + e.message); }
+}
+function clearAllChats() {
+  Object.keys(allUsers).forEach(uid => {
+    if (uid === myUid) return;
+    db.ref(`rooms/${ROOM}/dms/${getKey(uid)}/messages`).remove();
+  });
+  document.getElementById('messages').innerHTML = '';
+}
+async function deleteAccount() {
+  try {
+    await db.ref(`rooms/${ROOM}/presence/${myUid}`).remove();
+    for (const uid of Object.keys(allUsers)) { if (uid !== myUid) await db.ref(`rooms/${ROOM}/dms/${getKey(uid)}`).remove(); }
+    await auth.currentUser.delete();
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+// ── WEBRTC ──
+const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+async function startCall(targetUid, targetName) {
+  document.getElementById('call-status').textContent = 'Calling ' + targetName + '...';
+  document.getElementById('video-overlay').style.display = 'flex';
+  document.getElementById('remote-label').textContent = targetName;
+  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  document.getElementById('local-video').srcObject = localStream;
+  peerConn = new RTCPeerConnection(rtcConfig);
+  localStream.getTracks().forEach(t => peerConn.addTrack(t, localStream));
+  peerConn.ontrack = e => { document.getElementById('remote-video').srcObject = e.streams[0]; document.getElementById('call-status').textContent = 'In call with ' + targetName; };
+  peerConn.onicecandidate = e => { if (e.candidate) db.ref(`rooms/${ROOM}/calls/${myUid}_to_${targetUid}/candidates`).push(e.candidate.toJSON()); };
+  const offer = await peerConn.createOffer(); await peerConn.setLocalDescription(offer);
+  db.ref(`rooms/${ROOM}/calls/${myUid}_to_${targetUid}`).set({ offer: { type: offer.type, sdp: offer.sdp }, callerUid: myUid, callerName: myName, targetUid, status: 'ringing' });
+  db.ref(`rooms/${ROOM}/calls/${myUid}_to_${targetUid}`).on('value', async snap => { const d = snap.val(); if (!d) return; if (d.answer) await peerConn.setRemoteDescription(new RTCSessionDescription(d.answer)); if (d.status === 'declined') endCall(); });
+  db.ref(`rooms/${ROOM}/calls/${targetUid}_to_${myUid}/candidates`).on('child_added', async snap => { try { await peerConn.addIceCandidate(new RTCIceCandidate(snap.val())); } catch(e) {} });
+}
+function handleIncomingCall(snap) {
+  const d = snap.val(); if (!d || d.targetUid !== myUid || d.status !== 'ringing') return;
+  document.getElementById('caller-name').textContent = d.callerName;
+  document.getElementById('incoming-call').style.display = 'block';
+  document.getElementById('accept-btn').onclick = async () => {
+    document.getElementById('incoming-call').style.display = 'none';
+    document.getElementById('call-status').textContent = 'In call';
+    document.getElementById('video-overlay').style.display = 'flex';
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    document.getElementById('local-video').srcObject = localStream;
+    peerConn = new RTCPeerConnection(rtcConfig);
+    localStream.getTracks().forEach(t => peerConn.addTrack(t, localStream));
+    peerConn.ontrack = e => { document.getElementById('remote-video').srcObject = e.streams[0]; };
+    peerConn.onicecandidate = e => { if (e.candidate) db.ref(`rooms/${ROOM}/calls/${myUid}_to_${d.callerUid}/candidates`).push(e.candidate.toJSON()); };
+    await peerConn.setRemoteDescription(new RTCSessionDescription(d.offer));
+    const ans = await peerConn.createAnswer(); await peerConn.setLocalDescription(ans);
+    db.ref(`rooms/${ROOM}/calls/${snap.key}`).update({ answer: { type: ans.type, sdp: ans.sdp }, status: 'answered' });
+  };
+  document.getElementById('decline-btn').onclick = () => { document.getElementById('incoming-call').style.display = 'none'; db.ref(`rooms/${ROOM}/calls/${snap.key}`).update({ status: 'declined' }); };
+}
+function endCall() {
+  if (peerConn) { peerConn.close(); peerConn = null; }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  document.getElementById('local-video').srcObject = null;
+  document.getElementById('remote-video').srcObject = null;
+  document.getElementById('video-overlay').style.display = 'none';
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 </script>
 </body>
-</html>
+  </html>
