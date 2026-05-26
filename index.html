@@ -1177,5 +1177,11 @@ function handleIncomingCall(snap) {
 function endCall() {
   if(peerConn){peerConn.close();peerConn=null;}
   if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
-  document.getElementById('local-video').srcObject=null;
-  do
+  document.getElementById('local-video').srcObject=null;  document.getElementById('remote-video').srcObject=null;
+  document.getElementById('video-overlay').style.display='none';
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\'/g,'&#39;');}
+</script>
+</body>
+          </html>
