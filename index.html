@@ -564,7 +564,8 @@ auth.onAuthStateChanged(user => {
 function initApp() {
   // Presence
   const presRef = db.ref(`rooms/${ROOM}/presence/${myUid}`);
-  presRef.set({ username:myName, online:true, lastSeen:Date.now() });
+  // Use update() not set() so existing fields like status are preserved
+  presRef.update({ username:myName, online:true, lastSeen:Date.now() });
   presRef.onDisconnect().update({ online:false, lastSeen:Date.now() });
   setInterval(() => presRef.update({ lastSeen:Date.now() }), 30000);
 
@@ -849,6 +850,12 @@ async function openChat(uid, uname) {
 
 function closeChat() {
   document.getElementById('chat-panel').classList.remove('open');
+  // Reset active-chat so it reopens cleanly next time
+  document.getElementById('active-chat').style.display = 'none';
+  document.getElementById('no-chat-msg').style.display = 'flex';
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('typing-bubble').style.display = 'none';
+  clearReply();
   activePeer=null;
   if(msgRef){ msgRef.off('child_added'); msgRef=null; }
   Object.entries(msgChangedListeners).forEach(([k,fn])=>db.ref(k).off('child_changed',fn));
@@ -1230,16 +1237,19 @@ function playMsgSound() {
   if (!soundEnabled) return;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.25);
+    // Resume context first — required by browser autoplay policy
+    ctx.resume().then(() => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(920, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(680, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    });
   } catch(e) {}
 }
 
