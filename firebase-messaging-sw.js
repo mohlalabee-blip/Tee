@@ -21,7 +21,7 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage(payload => {
   const { title, body } = payload.notification || {};
   self.registration.showNotification(title || 'New Message', {
-    body:      body || 'You have a new message',
+    body:      body || 'You Have A New Message✉️',
     icon:      'https://via.placeholder.com/96/6366F1/ffffff?text=🔒',
     badge:     'https://via.placeholder.com/96/6366F1/ffffff?text=🔒',
     tag:       'private-room-msg',
