@@ -496,6 +496,7 @@ const firebaseConfig = {
 };
 const ROOM        = "myroom";
 const INVITE_CODE = "justus"; // ← Change this to your secret invite code
+const VAPID_KEY  = "X4TCI9uyLcnlyAOEP8l5lmhKBnSW-LXkYbiU_ftPZJg";
 
 firebase.initializeApp(firebaseConfig);
 const auth    = firebase.auth();
@@ -633,6 +634,9 @@ function initApp() {
   // Cleanup expired messages every 5 min
   cleanupExpired();
   setInterval(cleanupExpired, 5 * 60 * 1000);
+
+  // Register service worker + get FCM token for offline push notifications
+  initFCM();
 
   // ── UI WIRING ──
   // Status
@@ -1258,6 +1262,21 @@ function endCall() {
   if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
   document.getElementById('local-video').srcObject=null;  document.getElementById('remote-video').srcObject=null;
   document.getElementById('video-overlay').style.display='none';
+}
+
+// ── FCM (offline push notifications) ────────────────────────────────────
+async function initFCM() {
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const messaging = firebase.messaging();
+    const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (token && myUid) {
+      db.ref(`rooms/${ROOM}/fcmTokens/${myUid}`).set(token);
+    }
+  } catch(e) {
+    console.log('FCM setup:', e.message);
+  }
 }
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\'/g,'&#39;');}
