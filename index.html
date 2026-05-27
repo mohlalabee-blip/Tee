@@ -811,13 +811,22 @@ function renderUsers() {
   document.querySelectorAll('.conv-item').forEach(item => {
     const uid = item.dataset.uid, uname = item.dataset.uname;
     let pressTimer;
-    item.addEventListener('click', () => { if(pressTimer==='long') return; openChat(uid, uname); });
-    item.addEventListener('mousedown', () => { pressTimer=setTimeout(()=>{ pressTimer='long'; showProfile(uid,uname); },600); });
-    item.addEventListener('mouseup',   () => { if(pressTimer!=='long') clearTimeout(pressTimer); });
+    // Tap = open chat, long press (1 second) = show profile
+    item.addEventListener('touchstart', e => {
+      pressTimer = setTimeout(() => { pressTimer='long'; showProfile(uid,uname); }, 1000);
+    }, {passive:true});
+    item.addEventListener('touchmove', () => { clearTimeout(pressTimer); pressTimer=null; });
+    item.addEventListener('touchend', e => {
+      e.preventDefault(); // stops Android Google search bar
+      if(pressTimer==='long'){ pressTimer=null; return; }
+      clearTimeout(pressTimer); pressTimer=null;
+      openChat(uid, uname);
+    });
+    // Desktop mouse support
+    item.addEventListener('mousedown', () => { pressTimer=setTimeout(()=>{ pressTimer='long'; showProfile(uid,uname); },1000); });
+    item.addEventListener('mouseup',   () => { if(pressTimer!=='long'){ clearTimeout(pressTimer); } });
     item.addEventListener('mouseleave',() => { if(pressTimer!=='long') clearTimeout(pressTimer); });
-    item.addEventListener('touchstart',() => { pressTimer=setTimeout(()=>{ pressTimer='long'; showProfile(uid,uname); },600); });
-    item.addEventListener('touchend',  () => { if(pressTimer!=='long') clearTimeout(pressTimer); });
-    item.addEventListener('touchmove', () => { if(pressTimer!=='long') clearTimeout(pressTimer); });
+    item.addEventListener('click',     () => { if(pressTimer==='long'){ pressTimer=null; return; } openChat(uid,uname); });
   });
 
   // Unread watchers
